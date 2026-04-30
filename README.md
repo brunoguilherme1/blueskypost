@@ -2,8 +2,6 @@
 
 A lightweight agent that explains Bluesky posts by fetching the original post, analyzing text and images, retrieving external context when needed, and returning a concise explanation in 3–5 bullet points.
 
-The system is designed for social posts that depend on missing context: memes, slang, recent events, screenshots, quoted posts, linked articles, niche references, or visual cues.
-
 ## Live Demo
 
 A deployed version of the application is available here:
@@ -781,19 +779,3 @@ The **Bluesky Eval Harness** is closer to the real product setting. It tests rea
 The **20 Newsgroups Evaluation** measures broader generalization. It abstracts away platform-specific fetching and focuses on whether the explanation pipeline can handle short posts derived from diverse topics. The strong topic accuracy, groundedness, and LLM judge score suggest that the core explanation pipeline generalizes well beyond the curated Bluesky set.
 
 Together, the evaluations show that the system can explain real social-media posts and generalize to wider topic distributions while keeping a stable format, low hallucination rate, and useful explanations.
-
-## Design Decisions
-
-- **Structured intermediate outputs:** The planner returns JSON so retrieval decisions, confidence, and unknown terms can be inspected and evaluated.
-- **Retrieval only when needed:** The system avoids unnecessary search for posts that can be explained from the text alone.
-- **Multimodal support:** Image analysis is included because many social posts rely on screenshots, memes, or visual references.
-- **Short final answers:** The final output is constrained to 3–5 bullets to keep explanations readable.
-- **Two-track evaluation:** Real Bluesky examples test product behavior, while 20 Newsgroups examples test broader topic robustness.
-
-## Future Improvements
-
-- Improve quoted-post and thread-context handling.
-- Add stronger reranking for retrieved search results.
-- Add citation display in the UI for retrieved context.
-- Expand the Bluesky evaluation set with more image-heavy and thread-heavy posts.
-- Add regression tests for post parsing, retrieval decisions, and JSON output validation.
