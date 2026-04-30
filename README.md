@@ -47,6 +47,7 @@ Generate final explanation
         ↓
 Return 3–5 concise bullets
 ````
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/53e0af25-51f6-4245-8d17-8d58b97e0b8e" />
 
 ## Main Components
 
