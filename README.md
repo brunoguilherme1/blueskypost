@@ -238,42 +238,219 @@ Output:
 - The final explanation summarizes what the post means and why it matters in the current conversation.
 ```
 
+Absolutely — below is a **more paper-style / ACL-style Evaluation section** you can replace in your `.md`.
+
+It explains, in order:
+
+1. What the input JSON is
+2. What the output JSON is
+3. What metrics are computed
+4. How the 10+ Bluesky eval works
+5. How the 20 Newsgroups eval works
+6. Results
+7. Final combined table
+
+````markdown
 ## Evaluation
 
-The project includes two evaluation tracks:
+The evaluation is designed to measure whether the agent can produce explanations that are useful, grounded, concise, and faithful to the original post.
+
+We evaluate the system in two complementary settings:
 
 1. **Eval Harness: 10+ Bluesky posts with expected outputs**
 2. **20 Newsgroups Evaluation**
 
-The first evaluation track focuses on real Bluesky-style posts and checks whether the agent can explain actual social content with expected themes, retrieval behavior, image usage, and external URL usage.
+The first setting evaluates the system on real or representative Bluesky posts with manually defined expectations. The second setting expands evaluation coverage by converting 20 Newsgroups articles into synthetic Bluesky-style posts, allowing us to measure topic recovery, groundedness, and explanation consistency across a wider set of domains.
 
-The second evaluation track uses synthetic Bluesky-style posts generated from the 20 Newsgroups dataset to evaluate topic recovery, theme coverage, groundedness, and classification consistency at a broader scale.
+---
 
-## Eval Harness: 10+ Bluesky Posts with Expected Outputs
+## Evaluation Input Format
 
-This evaluation uses curated Bluesky post examples. Each example includes:
+Each evaluation example is stored as a JSON object. The input JSON defines what the agent receives, what the expected explanation should cover, and which behaviors should be checked.
 
-* A real or representative Bluesky post URL
-* The post text
-* Whether the post has images
-* Whether the post has an external URL
-* Expected themes
-* Expected retrieval behavior
-* Modality expectations
-* Forbidden claims
-* Evaluation focus
+The shared structure is:
 
-The evaluator runs the full agent pipeline on each example and compares the generated explanation against the expected behavior.
+```json
+{
+  "id": "example_id",
+  "category": "example_category",
+  "url": "https://bsky.app/profile/.../post/...",
+  "post_text": "Original post text",
+  "has_image": false,
+  "has_external_url": false,
+  "expected_themes": [
+    "theme the explanation should mention"
+  ],
+  "expected_retrieval_behavior": {
+    "needs_search": true,
+    "reason": "why retrieval is or is not expected"
+  },
+  "modality_expectation": {
+    "should_use_text": true,
+    "should_use_image": false,
+    "should_use_external_url": false
+  },
+  "must_not_include": [
+    "claims the explanation must avoid"
+  ],
+  "eval_focus": [
+    "main evaluation objective"
+  ]
+}
+````
 
-Main evaluator file:
+### Field Explanation
 
-```text
-eval.py
+| Field                         | Meaning                                                              |
+| ----------------------------- | -------------------------------------------------------------------- |
+| `id`                          | Unique evaluation example ID                                         |
+| `category`                    | Type of post, such as news, meme, image post, or synthetic benchmark |
+| `url`                         | Bluesky URL for real-post evaluation; `null` for synthetic examples  |
+| `post_text`                   | Text that the agent must explain                                     |
+| `has_image`                   | Whether the post contains an image                                   |
+| `has_external_url`            | Whether the post contains a linked article or external source        |
+| `expected_themes`             | Key ideas that the explanation should cover                          |
+| `expected_retrieval_behavior` | Whether search should be used and why                                |
+| `modality_expectation`        | Whether text, image, or external link context should be used         |
+| `must_not_include`            | Claims that would count as hallucinations or unsupported output      |
+| `eval_focus`                  | What this example is testing                                         |
+
+---
+
+## Evaluation Output Format
+
+Each evaluator produces a JSON result containing:
+
+1. The original example ID
+2. The agent output
+3. Rule-based metrics
+4. LLM-as-judge metrics
+5. Aggregated summary statistics
+
+A simplified output looks like this:
+
+```json
+{
+  "summary": {
+    "num_examples": 12,
+    "num_errors": 0,
+    "rule_based_means": {
+      "theme_coverage_rule": 0.4333,
+      "format_compliance_rule": 2,
+      "bullet_count": 3,
+      "retrieval_rule_score": 1.5833,
+      "rule_score": 0.7842
+    },
+    "llm_judge_means": {
+      "theme_coverage": 0.8417,
+      "groundedness": 0.9083,
+      "hallucination_score": 0.0833,
+      "usefulness": 4.4167,
+      "format_compliance": 1.5,
+      "retrieval_success": 1.4167,
+      "llm_judge_score": 0.7822
+    }
+  },
+  "results": [
+    {
+      "id": "real_news_gas_prices_001",
+      "agent_result": {
+        "post": {},
+        "analysis": {},
+        "retrieval_context": "...",
+        "image_context": "",
+        "explanation": "- bullet 1\n- bullet 2\n- bullet 3"
+      },
+      "rule_based": {},
+      "llm_judge": {}
+    }
+  ]
+}
 ```
 
-The evaluator checks expected themes, forbidden content, modality usage, retrieval behavior, and final explanation quality. 
+The `agent_result` contains the full model pipeline output: post metadata, planner analysis, retrieved context, image context, and final explanation. The evaluation result then attaches deterministic metrics and LLM-as-judge metrics to each example.
 
-### Example JSON: Bluesky Eval Harness
+---
+
+## Metrics
+
+The evaluation combines deterministic rule-based metrics with LLM-as-judge metrics.
+
+### Rule-Based Metrics
+
+Rule-based metrics are computed directly from the output and expected JSON fields. These metrics are deterministic and useful for checking formatting, coverage, retrieval behavior, and forbidden content.
+
+| Metric                   | Description                                                          |
+| ------------------------ | -------------------------------------------------------------------- |
+| `theme_coverage_rule`    | Measures whether expected themes appear in the generated explanation |
+| `format_compliance_rule` | Checks whether the output follows the expected 3–5 bullet format     |
+| `bullet_count`           | Counts the number of bullets in the final explanation                |
+| `no_forbidden_content`   | Checks whether the model avoided forbidden claims                    |
+| `retrieval_rule_score`   | Checks whether retrieval was used when expected                      |
+| `image_rule_score`       | Checks whether image context was used when expected                  |
+| `external_rule_score`    | Checks whether external URLs were used when expected                 |
+| `rule_score`             | Weighted aggregate score over rule-based metrics                     |
+
+The standard evaluator computes rule-based metrics by checking theme coverage, output format, forbidden content, image usage, external URL usage, and retrieval behavior. 
+
+### LLM-as-Judge Metrics
+
+LLM-as-judge metrics evaluate qualitative properties that are harder to measure with exact rules.
+
+| Metric                | Description                                                            |
+| --------------------- | ---------------------------------------------------------------------- |
+| `theme_coverage`      | Whether the explanation covers the expected meaning                    |
+| `groundedness`        | Whether the explanation is supported by the post and retrieved context |
+| `hallucination_score` | Whether unsupported claims were introduced                             |
+| `usefulness`          | Whether the explanation helps the reader understand the post           |
+| `format_compliance`   | Whether the response follows the expected bullet format                |
+| `retrieval_success`   | Whether retrieved context was useful or correctly skipped              |
+| `image_usage`         | Whether images were used when relevant                                 |
+| `external_url_usage`  | Whether linked content was used when relevant                          |
+| `quote_thread_usage`  | Whether quoted post or thread context was used when relevant           |
+| `topic_confidence`    | Confidence of topic prediction in the 20 Newsgroups evaluation         |
+| `llm_judge_score`     | Weighted aggregate score from the LLM judge                            |
+
+---
+
+# Eval Harness: 10+ Bluesky Posts with Expected Outputs
+
+The primary evaluation harness uses at least 10 Bluesky post examples with expected outputs. This directly addresses the assignment requirement that the repo include an evaluation harness with 10+ Bluesky posts and expected outputs. 
+
+The goal is to evaluate whether the agent can handle realistic social-media posts, including:
+
+* News/data posts
+* Slang or meme posts
+* Posts with images
+* Posts with external links
+* Posts requiring search
+* Posts where retrieval should not be used
+* Posts where numeric faithfulness matters
+* Posts where unsupported claims must be avoided
+
+The evaluator runs the full Bluesky pipeline:
+
+```text
+Bluesky URL
+   ↓
+fetch_post
+   ↓
+text_analyzer
+   ↓
+vision analysis, if needed
+   ↓
+search/retrieval, if needed
+   ↓
+explainer
+   ↓
+evaluation
+```
+
+The UI and core pipeline fetch and display the original post, then run the agent and show the explanation beside the source post. 
+
+---
+
+## Example Input JSON: Bluesky Evaluation
 
 ```json
 {
@@ -316,25 +493,72 @@ The evaluator checks expected themes, forbidden content, modality usage, retriev
 }
 ```
 
-### What this evaluates
+### Why this example is useful
 
-This harness is designed to verify whether the agent can:
+This example tests whether the model can:
 
-* Explain real Bluesky posts
-* Use retrieval when the content is time-sensitive
-* Preserve numeric facts from the post
-* Avoid unsupported claims
-* Use images when relevant
-* Use external URLs when relevant
-* Produce a clean 3–5 bullet explanation
+* Preserve numeric values from the post
+* Recognize that the post cites AAA
+* Understand that the topic is time-sensitive
+* Trigger retrieval because the context may require verification
+* Avoid overclaiming causality between conflict and gas prices
 
-### Run Bluesky Eval Harness
+---
 
-```bash
-python eval.py
+## Example Output JSON: Bluesky Evaluation
+
+```json
+{
+  "id": "real_news_gas_prices_001",
+  "agent_result": {
+    "post": {
+      "url": "https://bsky.app/profile/nbcnews.com/post/3mkpojrx3rk2u",
+      "text": "Average U.S. gas prices per gallon on April 30...",
+      "has_image": false,
+      "has_external_url": false
+    },
+    "analysis": {
+      "draft_explanation": "The post reports U.S. gas prices and compares them with prices at the start of the Iran war.",
+      "unknown_terms": [
+        {
+          "term": "AAA gas prices April 30",
+          "reason": "price and source context are time-sensitive",
+          "recency_sensitive": true
+        }
+      ],
+      "confidence": "medium",
+      "needs_search": true,
+      "queries": [
+        "AAA gas prices April 30 regular premium diesel",
+        "US gas prices Iran war Feb 28 latest"
+      ]
+    },
+    "retrieval_context": "Retrieved context from search results...",
+    "image_context": "",
+    "explanation": "- The post is a news/data update about U.S. fuel prices, citing AAA as the source.\n- It compares regular, premium, and diesel prices against the start of the Iran war on Feb. 28.\n- Diesel shows the largest listed increase, but the post should not be read as proving the war was the only cause."
+  },
+  "rule_based": {
+    "theme_coverage_rule": 0.8,
+    "format_compliance_rule": 2,
+    "bullet_count": 3,
+    "retrieval_rule_score": 2,
+    "rule_score": 0.9
+  },
+  "llm_judge": {
+    "theme_coverage": 0.9,
+    "groundedness": 0.95,
+    "hallucination_score": 0,
+    "usefulness": 5,
+    "format_compliance": 2,
+    "retrieval_success": 2,
+    "llm_judge_score": 0.92
+  }
+}
 ```
 
-### Final Mean Metrics
+---
+
+## Bluesky Eval Results
 
 ```text
 Examples evaluated: 12
@@ -364,38 +588,59 @@ LLM-as-judge means:
 
 ### Interpretation
 
-The Bluesky harness shows that the system performs well on groundedness and usefulness while maintaining clean output formatting. The average bullet count is exactly 3, matching the required explanation style. The rule score of `0.7842` indicates that the agent generally follows expected behavior across theme coverage, retrieval, modality usage, and forbidden-content checks.
+The Bluesky harness shows that the system produces useful and grounded explanations on realistic posts. The model achieved strong groundedness (`0.9083`) and usefulness (`4.4167 / 5`), indicating that the explanations are generally helpful and supported by available context.
 
-The LLM-as-judge score of `0.7822` suggests the explanations are usually useful and grounded, but there is still room to improve image usage, external URL usage, and quote/thread context handling.
+The output format is stable: the average bullet count is exactly `3`, and the rule-based format compliance score is `2`, meaning the system consistently follows the required concise bullet style.
 
-## 20 Newsgroups Evaluation
+The lower theme coverage rule score (`0.4333`) reflects the strictness of keyword-based matching rather than necessarily poor explanation quality. In contrast, the LLM judge assigns a much higher theme coverage score (`0.8417`), suggesting that many explanations captured the intended meaning semantically even when they did not match expected theme wording exactly.
 
-The 20 Newsgroups evaluation converts longer forum/news-style texts into synthetic Bluesky-style posts. This allows the project to test explanation quality across many domains, including religion, politics, sports, science, hardware, software, medicine, space, and more.
+---
 
-The dataset builder uses `sklearn.fetch_20newsgroups`, samples examples by topic, and uses an LLM to rewrite each longer article into a realistic short Bluesky-style post. The generated dataset includes the original gold topic, expected themes, retrieval expectations, and forbidden claims. 
+# 20 Newsgroups Evaluation
 
-Main files:
+The 20 Newsgroups evaluation is designed to test whether the explanation pipeline generalizes beyond a small curated set of Bluesky posts.
 
-```text
-build_20news_eval.py
-eval_20news.py
-```
+The idea is to take longer forum/news-style texts from `sklearn.fetch_20newsgroups`, rewrite them as short Bluesky-style posts, and then evaluate whether the agent can recover the underlying topic and produce a grounded explanation.
 
-The 20 Newsgroups evaluator runs the same core explanation pipeline without fetching a real Bluesky URL. It then evaluates rule-based metrics, LLM-as-judge metrics, and topic prediction accuracy against the original gold topic. 
+This provides a broader stress test across many domains, including:
 
-### Build the Synthetic Dataset
+* Religion
+* Politics
+* Sports
+* Space
+* Medicine
+* Cryptography
+* Hardware
+* Software
+* Autos
+* Motorcycles
+* Electronics
 
-```bash
-python build_20news_eval.py
-```
+---
 
-This generates a JSON file like:
+## Dataset Construction
 
-```text
-evals/20news_bluesky_synthetic.json
-```
+The dataset builder loads the 20 Newsgroups test split using `sklearn.fetch_20newsgroups`, removes headers, footers, and quotes, and samples examples by topic. The default configuration samples `n_per_topic = 10`, with `seed = 42`, although the evaluation can also be limited to a smaller subset for faster runs. 
 
-### Example JSON: 20 Newsgroups Synthetic Eval
+The script supports selecting specific topics through `selected_topics`. If no topic filter is provided, examples can be sampled across all available 20 Newsgroups labels. 
+
+The generation process uses an LLM to transform each long article into a short social-media-style post while preserving the main topic. The prompt explicitly instructs the model not to reveal the gold topic label and not to mention 20 Newsgroups, so the explainer must infer the theme from the synthetic post itself. 
+
+---
+
+## 20 Newsgroups Input JSON
+
+Each synthetic example contains:
+
+* `gold_topic`: the original 20 Newsgroups label
+* `post_text`: the synthetic Bluesky-style post
+* `original_article_excerpt`: source text used to create the post
+* `expected_themes`: concepts the explanation should cover
+* `expected_retrieval_behavior`: whether search should be needed
+* `must_not_include`: forbidden claims
+* `eval_focus`: evaluation goals
+
+Example:
 
 ```json
 {
@@ -437,25 +682,101 @@ evals/20news_bluesky_synthetic.json
 }
 ```
 
-### What this evaluates
+---
 
-This evaluation checks whether the agent can:
+## 20 Newsgroups Pipeline
 
-* Recover the likely topic behind a short social-style post
-* Explain the post without seeing the original topic label
-* Cover expected themes
-* Avoid forbidden claims
-* Maintain groundedness
-* Decide correctly whether retrieval is needed
-* Support broader domain coverage beyond the curated Bluesky examples
+Unlike the real Bluesky evaluation, this track does not call `fetch_post`, because synthetic examples do not have real URLs. Instead, it runs the same core reasoning and explanation pipeline directly on `post_text`.
 
-### Run 20 Newsgroups Evaluation
-
-```bash
-python eval_20news.py
+```text
+Synthetic post_text
+        ↓
+text_analyzer
+        ↓
+retrieve_context, if needed
+        ↓
+explainer
+        ↓
+rule-based evaluation
+        ↓
+LLM-as-judge evaluation
+        ↓
+topic prediction against gold_topic
 ```
 
-### Final 20News Mean Metrics
+The evaluator runs the same core pipeline through `analyze_text`, `retrieve_context`, and `explain_post`, but without Bluesky post fetching. It then evaluates rule-based metrics, LLM-as-judge metrics, and topic prediction accuracy against the original gold topic. 
+
+---
+
+## 20 Newsgroups Output JSON
+
+The output JSON stores the full agent output, rule-based metrics, LLM judge metrics, and topic prediction results.
+
+```json
+{
+  "id": "synthetic_20news_alt_atheism_001",
+  "gold_topic": "alt.atheism",
+  "post_text": "It's fascinating how some people attribute natural disasters to moral failings...",
+  "agent_result": {
+    "post": {
+      "text": "It's fascinating how some people attribute natural disasters to moral failings...",
+      "source": "synthetic_20newsgroups"
+    },
+    "analysis": {
+      "draft_explanation": "The post comments on how some people interpret natural disasters as moral punishment.",
+      "unknown_terms": [],
+      "confidence": "high",
+      "needs_search": false,
+      "queries": []
+    },
+    "retrieval_context": "",
+    "image_context": "",
+    "explanation": "- The post criticizes the idea that natural disasters should be interpreted as punishment for moral behavior.\n- It points out a mismatch between where the earthquake actually happened and where blame was directed.\n- The broader theme is how people sometimes use disasters to reinforce social or religious narratives."
+  },
+  "rule_based": {
+    "theme_coverage_rule": 0.6667,
+    "format_compliance_rule": 2,
+    "bullet_count": 3,
+    "no_forbidden_content": true,
+    "retrieval_rule_score": 2,
+    "rule_score": 0.8333
+  },
+  "llm_judge": {
+    "theme_coverage": 1.0,
+    "groundedness": 1.0,
+    "hallucination_score": 0,
+    "usefulness": 5,
+    "format_compliance": 2,
+    "retrieval_success": 2,
+    "predicted_topic": "alt.atheism",
+    "topic_confidence": 0.9,
+    "gold_topic": "alt.atheism",
+    "topic_correct": true,
+    "topic_accuracy": 1.0,
+    "llm_judge_score": 0.95
+  }
+}
+```
+
+---
+
+## 20 Newsgroups Metrics
+
+The 20 Newsgroups evaluator adds topic-level evaluation on top of explanation quality.
+
+| Metric             | Meaning                                                        |
+| ------------------ | -------------------------------------------------------------- |
+| `predicted_topic`  | Topic predicted by the LLM judge from the post and explanation |
+| `gold_topic`       | Original 20 Newsgroups label                                   |
+| `topic_correct`    | Whether predicted topic matches the gold topic                 |
+| `topic_accuracy`   | Binary accuracy for each example                               |
+| `topic_confidence` | Judge confidence in the predicted topic                        |
+
+The evaluator uses the official list of 20 Newsgroups topic labels and requires the judge to predict exactly one of them. It then compares `predicted_topic` with `gold_topic` to compute topic accuracy. 
+
+---
+
+## 20 Newsgroups Results
 
 ```text
 Examples evaluated: 20
@@ -483,63 +804,50 @@ Topic accuracy: 0.95
 
 ### Interpretation
 
-The 20 Newsgroups evaluation shows strong generalization across different topics. The model achieved a topic accuracy of `0.95`, meaning it was able to recover the correct source topic for most synthetic posts. The high groundedness score of `0.975` and low hallucination score of `0.05` suggest that the generated explanations were strongly supported by the post and context.
+The 20 Newsgroups evaluation shows strong generalization across broader content domains. The model achieved `0.95` topic accuracy, meaning that the judge was able to recover the correct source topic from the synthetic post and generated explanation in most cases.
 
-The rule-based score of `0.8508` indicates solid alignment with expected themes and output formatting. The LLM-as-judge score of `0.9143` shows that the explanations were generally useful, grounded, and well-formatted.
+The high groundedness score (`0.975`) and low hallucination score (`0.05`) suggest that the explanations were strongly supported by the synthetic post and did not introduce many unsupported claims. The average usefulness score of `4.8 / 5` indicates that the generated explanations were highly informative.
 
-## Evaluation Metrics
+The rule-based score of `0.8508` confirms that the system generally covers expected themes and follows the required output format. The average bullet count is exactly `3`, showing that the output format remains stable across this broader evaluation set.
 
-| Metric              | Description                                                      |
-| ------------------- | ---------------------------------------------------------------- |
-| Theme Coverage      | Whether the explanation covers the expected meaning              |
-| Groundedness        | Whether the explanation is supported by post/context             |
-| Hallucination Score | Whether unsupported claims were introduced                       |
-| Usefulness          | Whether the explanation helps the user understand the post       |
-| Format Compliance   | Whether the answer follows the 3–5 bullet format                 |
-| Retrieval Success   | Whether search was used correctly when needed                    |
-| Image Usage         | Whether image context was used when relevant                     |
-| External URL Usage  | Whether linked article/context was used when relevant            |
-| Quote Thread Usage  | Whether quoted post/thread context was used when relevant        |
-| Topic Accuracy      | Whether the predicted topic matches the gold 20 Newsgroups topic |
+---
 
-## Design Decisions
+# Final Combined Metrics
 
-### Planner-first architecture
+| Metric                 | Bluesky Eval Harness | 20 Newsgroups Eval |
+| ---------------------- | -------------------: | -----------------: |
+| Examples evaluated     |                   12 |                 20 |
+| Errors                 |                    0 |                  0 |
+| Theme coverage rule    |               0.4333 |             0.7667 |
+| Format compliance rule |               2.0000 |             2.0000 |
+| Bullet count           |               3.0000 |             3.0000 |
+| Image rule score       |               1.5000 |                N/A |
+| External rule score    |               2.0000 |                N/A |
+| Retrieval rule score   |               1.5833 |             1.1000 |
+| Rule score             |               0.7842 |             0.8508 |
+| LLM theme coverage     |               0.8417 |             0.9700 |
+| Groundedness           |               0.9083 |             0.9750 |
+| Hallucination score    |               0.0833 |             0.0500 |
+| Usefulness             |               4.4167 |             4.8000 |
+| LLM format compliance  |               1.5000 |             1.9500 |
+| Retrieval success      |               1.4167 |             0.9500 |
+| Image usage            |               1.3333 |                N/A |
+| External URL usage     |               0.5000 |                N/A |
+| Quote/thread usage     |               0.0000 |                N/A |
+| Topic confidence       |                  N/A |             0.9125 |
+| Topic accuracy         |                  N/A |             0.9500 |
+| LLM judge score        |               0.7822 |             0.9143 |
 
-The agent first analyzes the post before searching. This avoids unnecessary retrieval when the post is already understandable.
+## Overall Interpretation
 
-### Search only when needed
+The two evaluation tracks measure different strengths.
 
-The planner returns `needs_search = true` only when the post includes unknown terms, current events, niche references, slang, or incomplete context.
+The **Bluesky Eval Harness** is closer to the real product setting. It tests realistic posts, retrieval decisions, image usage, external URL usage, and social-media-specific explanation quality. The results show strong groundedness and usefulness, while also revealing areas for improvement in image, quote/thread, and external URL usage.
 
-### Multimodal support
+The **20 Newsgroups Evaluation** measures broader generalization. It abstracts away platform-specific fetching and focuses on whether the agent can explain short posts derived from diverse topics. The strong topic accuracy, groundedness, and LLM judge score suggest that the core explanation pipeline generalizes well beyond the curated Bluesky set.
 
-Images are analyzed when present, which helps explain memes, screenshots, artwork, and visual references.
-
-### Structured final output
-
-The final explanation is constrained to concise bullet points so the user gets a fast and readable answer.
-
-### Evaluation-focused design
-
-The project includes both curated Bluesky examples and synthetic benchmark evaluation to measure explanation quality, groundedness, retrieval behavior, and robustness across different post types.
-
-## Future Improvements
-
-* Add citations directly in the final explanation
-* Support more social platforms beyond Bluesky
-* Add model comparison across GPT-4o, GPT-4o-mini, Gemini, and Claude
-* Add cached retrieval to reduce repeated searches
-* Improve quote/thread context handling
-* Improve external URL usage when linked content is important
-* Add user feedback scoring for explanation quality
-* Deploy the app to Cloud Run or Streamlit Community Cloud
-
-## Author
-
-Bruno Gomes
-
-GitHub: [https://github.com/brunoguilherme1](https://github.com/brunoguilherme1)
+Together, the evaluations show that the system can both handle real social-media post explanation and generalize to wider topic distributions with stable formatting, low hallucination, and useful explanations.
 
 ```
 ```
+
