@@ -2,7 +2,7 @@
 
 A lightweight AI agent that explains Bluesky posts by fetching the original post, analyzing text and images, retrieving external context when needed, and generating a concise explanation in 3–5 bullet points.
 
-This project was built for the **Bluesky Post Explainer assignment**, where the agent must take a Bluesky post URL, search for relevant context, and return useful explanations. The expected submission includes a GitHub repo with the agent, an evaluation harness with 10+ Bluesky posts and expected outputs, and a README with setup instructions and design decisions. :contentReference[oaicite:0]{index=0}
+This project was built for the **Bluesky Post Explainer assignment**, where the agent must take a Bluesky post URL, search for relevant context, and return useful explanations. The expected submission includes a GitHub repo with the agent, an evaluation harness with 10+ Bluesky posts and expected outputs, and a README with setup instructions and design decisions.
 
 ## Index
 
