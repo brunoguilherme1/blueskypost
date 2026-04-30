@@ -1,0 +1,429 @@
+[
+  {
+    "id": "real_news_gas_prices_001",
+    "category": "news_data_post",
+    "url": "https://bsky.app/profile/nbcnews.com/post/3mkpojrx3rk2u",
+    "post_text": "Average U.S. gas prices per gallon on April 30, per AAA:\n\n• Regular: $4.30 (up $1.32 since war in Iran began on Feb. 28)\n• Premium: $5.16 (up $1.30 since war began)\n• Diesel: $5.50 (up $1.74 since war began)",
+    "has_image": false,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies this as a news/data post about U.S. gas prices",
+      "mentions AAA as the source cited by the post",
+      "explains that prices are being compared against the start of the Iran war on Feb. 28",
+      "explains that diesel had the largest listed increase",
+      "states that recent geopolitical conflict can affect fuel markets without overclaiming causality"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": true,
+      "reason": "gas prices and war-related context are time-sensitive and should be verified",
+      "suggested_queries": [
+        "AAA gas prices April 30 regular premium diesel",
+        "US gas prices Iran war Feb 28 latest"
+      ]
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": false,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "claims that the post proves the war is the only cause of price increases",
+      "invented gas prices not present in the post",
+      "unsupported political claims"
+    ],
+    "eval_focus": [
+      "recency handling",
+      "numeric faithfulness",
+      "source-aware explanation"
+    ]
+  },
+  {
+    "id": "real_art_torrey_pines_001",
+    "category": "image_art",
+    "url": "https://bsky.app/profile/jimmusilpainter.bsky.social/post/3mknwcwoojk2j",
+    "post_text": "My painting TORREY PINES BEACH",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies the post as an artist sharing a painting",
+      "mentions Torrey Pines Beach as the subject",
+      "describes the image as a colorful coastal/seascape painting",
+      "notes the dramatic clouds, ocean, beach, and warm pink/orange/purple palette",
+      "does not force unnecessary news or factual search"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "the post is self-contained and image context is enough"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "claims the painting is AI-generated",
+      "claims it is a photograph",
+      "invented biographical details about the artist"
+    ],
+    "eval_focus": [
+      "image understanding",
+      "avoiding unnecessary retrieval",
+      "art-context explanation"
+    ]
+  },
+  {
+    "id": "real_sports_nwsl_rodman_001",
+    "category": "sports_stat_image",
+    "url": "https://bsky.app/profile/nwslsoccer.com/post/3mkpwjes7gc2a",
+    "post_text": "Elite company 🤩\n\nWith her goal last night, Trinity Rodman becomes the third-youngest to reach 30 NWSL regular-season goals.",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies Trinity Rodman as the focus of the post",
+      "explains that she reached 30 NWSL regular-season goals",
+      "mentions that the milestone makes her the third-youngest player to do so",
+      "uses the image leaderboard to contextualize the phrase 'Elite company'",
+      "mentions that this is a sports achievement/statistical milestone"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": true,
+      "reason": "sports milestone and leaderboard may need verification or context",
+      "suggested_queries": [
+        "Trinity Rodman third youngest 30 NWSL regular season goals",
+        "NWSL youngest players to score 30 goals"
+      ]
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "claims she is the youngest overall",
+      "wrong sport or league",
+      "invented rankings not visible or retrieved"
+    ],
+    "eval_focus": [
+      "sports factuality",
+      "image OCR/leaderboard usage",
+      "recency-sensitive search"
+    ]
+  },
+  {
+    "id": "real_art_edward_hopper_001",
+    "category": "art_reference",
+    "url": "https://bsky.app/profile/gr8flbluejay.bsky.social/post/3mkpxhroxhs2d",
+    "post_text": "Edward Hopper, American (1882-1967), The Long Leg, 1935, oil on canvas 50.8 x 76.8 cm, The Huntington, San Marino, California, USA",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies the post as sharing an Edward Hopper artwork",
+      "mentions the painting title The Long Leg",
+      "mentions the year 1935 and oil-on-canvas medium if relevant",
+      "describes the visible image as a sailboat on blue water near a lighthouse/coastline",
+      "explains that the post is informational/art-historical rather than news"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "the post already contains the key artwork metadata; search optional only for extra art context"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "misidentifies the artist",
+      "claims the work is a photograph",
+      "invented interpretation presented as fact"
+    ],
+    "eval_focus": [
+      "art metadata faithfulness",
+      "image-text alignment",
+      "not over-searching"
+    ]
+  },
+  {
+    "id": "real_landscape_out_to_sea_001",
+    "category": "image_landscape_personal",
+    "url": "https://bsky.app/profile/drstevenhobbs.bsky.social/post/3mkptepkjmk2t",
+    "post_text": "Out to sea",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies this as a personal/landscape post",
+      "describes a coastal scene with ocean, rocks, sky, and flowers",
+      "explains that the short caption 'Out to sea' points attention toward the ocean view",
+      "does not require external search",
+      "keeps the explanation visual and concise"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "image and caption are sufficient"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "specific location unless retrieved or visible",
+      "claims about the photographer's intent beyond the caption",
+      "news or political framing"
+    ],
+    "eval_focus": [
+      "image-only/context-light post",
+      "caption-image fusion",
+      "avoid hallucination"
+    ]
+  },
+  {
+    "id": "real_news_voting_rights_guardian_001",
+    "category": "news_external_url",
+    "url": "https://bsky.app/profile/us.theguardian.com/post/3mkpwmvs6ec2m",
+    "post_text": "The ruling from the US supreme court destroying one of the last pillars of the 1965 Voting Rights Act marks the end of a long and painstaking campaign to roll back civil rights legislation by two titans of the court’s rightwing majority, chief justice John Roberts and Samuel Alito",
+    "has_image": true,
+    "has_external_url": true,
+    "external_title_visible": "The conservative supreme court justices behind the dismantling of the Voting Rights act",
+    "expected_themes": [
+      "identifies this as a Guardian article about the US Supreme Court and the Voting Rights Act",
+      "explains that the post claims a ruling weakens or dismantles a major part of Voting Rights Act protections",
+      "mentions Chief Justice John Roberts and Justice Samuel Alito as central figures in the article framing",
+      "explains why the Voting Rights Act matters for civil rights and voting protections",
+      "uses the external article as the primary source"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": true,
+      "reason": "legal/news context is specific and should be grounded in the linked article",
+      "suggested_queries": [
+        "Guardian conservative supreme court justices Voting Rights Act Roberts Alito",
+        "Voting Rights Act Supreme Court ruling Roberts Alito"
+      ]
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": true
+    },
+    "must_not_include": [
+      "claims not supported by the Guardian article or retrieved sources",
+      "incorrect case name unless verified",
+      "overly partisan language beyond explaining the article's framing"
+    ],
+    "eval_focus": [
+      "external URL grounding",
+      "legal/news summarization",
+      "political neutrality"
+    ]
+  },
+  {
+    "id": "real_news_mother_jones_rfk_001",
+    "category": "news_external_url",
+    "url": "https://bsky.app/profile/motherjones.com/post/3mkpqq5d4r623",
+    "post_text": "Why we’re suing RFK Jr.",
+    "has_image": true,
+    "has_external_url": true,
+    "external_title_visible": "Why We’re Suing RFK Jr.",
+    "expected_themes": [
+      "identifies this as a Mother Jones post about a lawsuit involving RFK Jr.",
+      "mentions that the linked article says the Epstein files are not the only documents the government is hiding",
+      "explains that the post is promoting an article/legal action rather than simply making a casual claim",
+      "uses the linked article as the primary source",
+      "does not infer legal details beyond the source"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": true,
+      "reason": "the reason for the lawsuit is in the linked article and needs source grounding",
+      "suggested_queries": [
+        "Mother Jones why we're suing RFK Jr",
+        "Mother Jones RFK Jr Epstein files lawsuit"
+      ]
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": true
+    },
+    "must_not_include": [
+      "unsupported allegations",
+      "invented lawsuit details",
+      "claims RFK Jr. personally hid documents unless the source says so"
+    ],
+    "eval_focus": [
+      "external URL grounding",
+      "legal claim caution",
+      "headline/context explanation"
+    ]
+  },
+  {
+    "id": "real_unknown_garden_jungle_001",
+    "category": "needs_fetch",
+    "url": "https://bsky.app/profile/thegardenjungle.bsky.social/post/3mkox57avdc2h",
+    "post_text": null,
+    "has_image": null,
+    "has_external_url": null,
+    "expected_themes": [],
+    "expected_retrieval_behavior": {
+      "needs_fetch": true,
+      "reason": "post content was not visible in the screenshots provided; use fetch_post(url) first"
+    },
+    "modality_expectation": {
+      "should_use_text": null,
+      "should_use_image": null,
+      "should_use_external_url": null
+    },
+    "must_not_include": [
+      "do not invent content for this post before fetching it"
+    ],
+    "eval_focus": [
+      "fetch robustness",
+      "unknown-input handling"
+    ]
+  },
+    {
+    "id": "real_art_cat_muratami_yutaka_001",
+    "category": "image_art",
+    "url": "https://bsky.app/profile/tevistickles.bsky.social/post/3mkpnozyduk2j",
+    "post_text": "Good morning everybody!!\n\nArtist: Muratami Yutaka",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies the post as sharing artwork rather than news",
+      "mentions the credited artist Muratami Yutaka",
+      "describes the image as a black-and-white ink or brush-style cat stretching",
+      "connects the cheerful greeting with the playful cat image",
+      "does not invent biographical details about the artist"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "the post is primarily visual/artistic and self-contained"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "claims the image is AI-generated",
+      "claims the cat is a photograph",
+      "invented biography of Muratami Yutaka",
+      "news or political framing"
+    ],
+    "eval_focus": [
+      "image understanding",
+      "art-context explanation",
+      "avoid hallucination"
+    ]
+  },
+  {
+    "id": "real_news_mother_jones_richard_pan_001",
+    "category": "news_external_url",
+    "url": "https://bsky.app/profile/motherjones.com/post/3mkpxmwzr522i",
+    "post_text": "Pediatrician and former state senator Richard Pan is on a mission—to make vaccines great again.",
+    "has_image": true,
+    "has_external_url": true,
+    "external_title_visible": "RFK Jr. has met his match in this California congressional hopeful",
+    "expected_themes": [
+      "identifies this as a Mother Jones news/article post",
+      "mentions Richard Pan as a pediatrician and former state senator",
+      "explains that the post frames Pan as opposing RFK Jr.-style vaccine skepticism or anti-vaccine politics",
+      "uses the linked article as the primary source for details",
+      "treats vaccine-related claims carefully and avoids adding unsupported medical claims"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": true,
+      "reason": "the detailed context comes from the linked article and current political/news context",
+      "suggested_queries": [
+        "Mother Jones Richard Pan RFK Jr vaccines congressional hopeful",
+        "Richard Pan vaccine California congressional hopeful"
+      ]
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": true
+    },
+    "must_not_include": [
+      "unsupported medical advice",
+      "claims RFK Jr. committed a crime",
+      "invented campaign details",
+      "claims beyond what the linked article supports"
+    ],
+    "eval_focus": [
+      "external URL grounding",
+      "health/news caution",
+      "image plus headline interpretation"
+    ]
+  },
+  {
+    "id": "real_art_french_lavender_001",
+    "category": "image_art",
+    "url": "https://bsky.app/profile/bakerart.bsky.social/post/3mkoyqbxdvk2b",
+    "post_text": "Watercolour drawing of French lavender with other plants including euphorbia spurge, honeysuckle, dicentra, geranium. When I do more flower paintings I'll identify the plants at the time and jot them down in a notebook as it can be painful remembering later when they're not there any more.",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies the post as an artist sharing a watercolor botanical drawing",
+      "mentions French lavender and the other listed plants",
+      "explains that the author is reflecting on documenting plant identities while painting",
+      "uses the image to describe a loose watercolor composition of flowers and leaves",
+      "does not require external search because the post provides the plant context"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "the post is self-contained and image context is enough"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "claims the painting is a photograph",
+      "claims the plants are definitely different species than those listed",
+      "invented botanical facts not needed for explaining the post",
+      "AI-generated image claim"
+    ],
+    "eval_focus": [
+      "image-text fusion",
+      "art and botanical context",
+      "avoid unnecessary retrieval"
+    ]
+  },
+  {
+    "id": "real_political_historical_meme_001",
+    "category": "political_historical_meme",
+    "url": "https://bsky.app/profile/havoc147.bsky.social/post/3mkokuwqjts2u",
+    "post_text": "If American history was taught correctly.",
+    "has_image": true,
+    "has_external_url": false,
+    "expected_themes": [
+      "identifies the post as a political or historical critique meme",
+      "explains that the image criticizes European colonization of Indigenous peoples",
+      "mentions the contrast between land theft/violence and biblical commandments against stealing and killing",
+      "explains that the caption suggests mainstream American history education omits or softens colonial violence",
+      "keeps the explanation neutral while accurately describing the meme's argument"
+    ],
+    "expected_retrieval_behavior": {
+      "needs_search": false,
+      "reason": "the meme is explainable from the post text and image text, though search could add historical background"
+    },
+    "modality_expectation": {
+      "should_use_text": true,
+      "should_use_image": true,
+      "should_use_external_url": false
+    },
+    "must_not_include": [
+      "graphic descriptions of violence",
+      "unsupported claims about a specific tribe or event unless retrieved",
+      "treating the image text as a neutral historical source",
+      "ignoring the image text"
+    ],
+    "eval_focus": [
+      "meme interpretation",
+      "image OCR/use of visible text",
+      "political neutrality",
+      "historical context without overclaiming"
+    ]
+  }
+]
