@@ -161,6 +161,9 @@ agent/orchestrator.py
 
 The orchestrator also runs text planning and image analysis in parallel when possible. 
 
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/5ce2bc20-7c60-4d7a-a0d8-8cfbe095abfe" />
+
+
 ## Setup
 
 ### 1. Create virtual environment
