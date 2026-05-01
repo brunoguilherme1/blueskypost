@@ -8,7 +8,7 @@ Pipeline:
 2. Analyze images, if present
 3. Analyze text and decide if retrieval is needed
 4. Retrieve external context
-5. Generate final 3-5 bullet explanation
+5. Generate final 3-bullet explanation
 """
 
 import json
@@ -17,7 +17,7 @@ from typing import Any, Dict
 
 from agent.explainer import explain_post
 from agent.text_analyzer import analyze_text
-from tools.fetch_post import fetch_post
+from tools.fetch_post import build_image_url, fetch_post
 from tools.search import retrieve_context
 from tools.vision import analyze_post_images, merge_image_insights
 
@@ -32,11 +32,6 @@ def _build_analysis_input(
 ) -> str:
     """
     Build the input passed to the text planner.
-
-    The planner uses this to decide:
-    - what the post means
-    - whether search is needed
-    - which queries to generate
     """
 
     parts = [f"Post text:\n{post.text}"]
@@ -72,6 +67,14 @@ def _post_metadata(post: Any) -> Dict[str, Any]:
         "quoted_text": post.quoted_text,
         "quoted_author": post.quoted_author,
         "image_count": len(post.images),
+        "images": [
+            {
+                "alt": image.alt,
+                "cid": image.cid,
+                "url": build_image_url(post.did, image.cid),
+            }
+            for image in post.images
+        ],
     }
 
 
@@ -86,20 +89,9 @@ def explain_bluesky_url(
 ) -> Dict[str, Any]:
     """
     Run the full Bluesky explanation pipeline.
-
-    Args:
-        url: Bluesky post URL.
-        analyze_images: Whether to run image understanding.
-        reanalyze_with_images: If True, reruns text planning after image context
-            is available. This improves quality for image-heavy posts but adds
-            one extra LLM call.
-
-    Returns:
-        Dictionary containing post metadata, planner output, image insights,
-        retrieval context, and final explanation.
     """
 
-    ##### Step 1: Fetch post first
+    ##### Step 1: Fetch post
     post = fetch_post(url)
 
     image_insights = []
@@ -131,6 +123,7 @@ def explain_bluesky_url(
                 if key == "images":
                     image_insights = []
                     image_context = ""
+
                 elif key == "analysis":
                     analysis = {
                         "draft_explanation": "Planner failed to analyze the post.",
