@@ -39,8 +39,6 @@ Use the live app by pasting a Bluesky post URL and running the explanation pipel
    * [Eval Harness: Bluesky Posts](#eval-harness-bluesky-posts)
    * [20 Newsgroups Evaluation](#20-newsgroups-evaluation)
    * [Final Combined Metrics](#final-combined-metrics)
-10. [Design Decisions](#design-decisions)
-11. [Future Improvements](#future-improvements)
 
 ## Goal
 
