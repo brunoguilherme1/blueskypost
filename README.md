@@ -304,7 +304,8 @@ final explanation
 
 When images are available, the image context is added before the final explanation is generated.
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/f49535c9-dcc1-48b6-a6ae-363757305676" />
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/4a42ff64-014f-497d-abfa-c89b2b758eca" />
+
 
 ## Setup
 
