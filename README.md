@@ -440,64 +440,6 @@ Open:
 http://localhost:8080
 ```
 
-## Docker
-
-The Dockerfile builds the React frontend first, then serves the compiled frontend through the FastAPI backend.
-
-```dockerfile
-FROM node:20-slim AS frontend-builder
-
-WORKDIR /frontend
-
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm install
-
-COPY frontend/ .
-RUN npm run build
-
-
-FROM python:3.11-slim
-
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED=1
-ENV PIP_NO_CACHE_DIR=1
-
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
-
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
-
-COPY . .
-
-COPY --from=frontend-builder /frontend/dist /app/frontend/dist
-
-EXPOSE 8080
-
-CMD ["uvicorn", "backend.app:app", "--host", "0.0.0.0", "--port", "8080"]
-```
-
-## Example Output
-
-Input:
-
-```text
-https://bsky.app/profile/havoc147.bsky.social/post/3mkokuwqjts2u
-```
-
-Output:
-
-```text
-- The post is making a historical and political critique of how American history is commonly taught.
-- The image contrasts European colonization of Indigenous peoples with religious commandments against stealing and killing, framing the post as a critique of colonial hypocrisy.
-- The caption suggests that mainstream history education often softens or omits the violence of colonization.
-```
-
 ## Evaluation
 
 The evaluation measures whether the agent produces explanations that are useful, grounded, concise, and faithful to the original post.
@@ -805,56 +747,162 @@ The average bullet count is exactly `3`, and the rule-based format compliance sc
 
 The lower keyword-based theme coverage score (`0.4333`) is expected because strict matching can miss semantically correct explanations that use different wording. The LLM judge gives a higher theme coverage score (`0.8417`, suggesting that many outputs captured the intended meaning even when they did not match the expected phrases exactly.
 
-## 20 Newsgroups Evaluation
+## 20 Newsgroups Synthetic Evaluation
 
-The 20 Newsgroups evaluation tests whether the explanation pipeline generalizes beyond curated Bluesky examples.
+The main Bluesky evaluation uses real Bluesky posts, which is important because it tests the real product flow: fetching posts, handling images, quoted posts, links, retrieval, and explanation generation.
 
-The dataset builder loads articles from `sklearn.fetch_20newsgroups`, removes headers, footers, and quotes, and converts articles into short Bluesky-style posts. The synthetic posts preserve the underlying topic, but the topic label is not shown to the explainer.
+However, real social posts are hard to label at scale. It is also difficult to know the exact “ground truth topic” for every post. To complement the real Bluesky eval, this experiment creates a **synthetic labeled benchmark** using `sklearn.datasets.fetch_20newsgroups`.
 
-This creates a broader stress test across domains such as:
+The key idea is:
 
-* Religion
-* Politics
-* Sports
-* Space
-* Medicine
-* Cryptography
-* Hardware
-* Software
-* Autos
-* Motorcycles
-* Electronics
+```text
+Labeled 20 Newsgroups article
+        ↓
+LLM converts article into a short Bluesky-style post
+        ↓
+The original 20 Newsgroups topic is kept as the gold label
+        ↓
+The explainer explains the synthetic post
+        ↓
+An evaluator checks explanation quality and whether the topic is recovered
+````
 
-### Dataset Construction
+This gives us a controlled dataset where every generated post has a known source topic.
 
-The default configuration samples `n_per_topic = 10` with `seed = 42`. The evaluation can also be limited to a smaller subset for faster runs.
+### Main objective
 
-The builder supports selecting specific topics through `selected_topics`. If no topic filter is provided, examples can be sampled across all available 20 Newsgroups labels.
+The goal is not to train the model on 20 Newsgroups. The goal is to create a **synthetic evaluation dataset** that tests whether the explanation pipeline can generalize beyond handpicked Bluesky examples.
 
-The synthetic post generation prompt instructs the model to preserve the main topic while avoiding direct mention of the gold label or the 20 Newsgroups dataset. This forces the explainer to infer the topic from the post content itself.
+This experiment checks whether the agent can:
 
-### 20 Newsgroups Input JSON
+* explain short posts derived from longer source documents
+* preserve the meaning of the original article
+* avoid hallucinating images or links that do not exist
+* produce useful and grounded explanations
+* recover the original high-level topic from the generated post and explanation
+
+### Dataset source
+
+The experiment uses the `fetch_20newsgroups` dataset from scikit-learn.
+
+Each original example has:
+
+* article text
+* numeric topic ID
+* human-readable topic label
+
+Examples of topic labels include:
+
+```text
+sci.space
+sci.med
+sci.crypt
+rec.sport.hockey
+rec.autos
+comp.graphics
+talk.politics.guns
+talk.religion.misc
+alt.atheism
+soc.religion.christian
+```
+
+The builder loads the test split and removes headers, footers, and quotes:
+
+```python
+data = fetch_20newsgroups(
+    subset="test",
+    remove=("headers", "footers", "quotes")
+)
+```
+
+This keeps the source text cleaner and reduces metadata leakage.
+
+### Synthetic dataset construction
+
+The synthetic dataset is created by `build_20news_eval.py`.
+
+The generation process has five steps.
+
+#### 1. Load 20 Newsgroups
+
+The builder loads the dataset from scikit-learn and keeps the topic labels.
+
+#### 2. Sample examples by topic
+
+The function `sample_by_topic` groups examples by topic and randomly samples `n_per_topic` examples from each topic using a fixed seed.
+
+This makes the benchmark reproducible.
+
+Default parameters:
+
+```python
+n_per_topic = 10
+seed = 42
+```
+
+The script also supports selecting a subset of topics with `selected_topics`.
+
+#### 3. Clean and truncate source articles
+
+Each article is cleaned before being passed to GPT:
+
+```python
+def clean_article(text: str, max_chars: int = 3000) -> str:
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    return text.strip()[:max_chars]
+```
+
+This removes excessive whitespace and limits the prompt size.
+
+#### 4. Generate a Bluesky-style post
+
+GPT receives:
+
+* the original topic label
+* the cleaned article excerpt
+* one few-shot example
+
+The model is instructed to rewrite the article as a short Bluesky-style post while preserving the main topic. It must not mention the gold label directly and must not mention 20 Newsgroups.
+
+The generation prompt returns JSON:
 
 ```json
 {
-  "id": "synthetic_20news_alt_atheism_001",
+  "synthetic_post": "...",
+  "expected_themes": ["...", "...", "..."],
+  "post_style": "news | opinion | question | technical | debate | personal",
+  "needs_search": true,
+  "reasoning_hint": "short note explaining what context the post requires"
+}
+```
+
+This makes each synthetic example usable by the same evaluation harness as the real Bluesky examples.
+
+#### 5. Save a structured JSON example
+
+Each generated example is saved with the original topic label preserved as ground truth:
+
+```json
+{
+  "id": "synthetic_20news_sci_space_001",
   "category": "synthetic_20newsgroups",
   "source_dataset": "sklearn.fetch_20newsgroups",
-  "gold_topic": "alt.atheism",
-  "gold_topic_id": 0,
+  "gold_topic": "sci.space",
+  "gold_topic_id": 14,
   "url": null,
-  "post_text": "It's fascinating how some people attribute natural disasters to moral failings. The recent earthquake was in Santa Cruz, yet the blame game started in San Francisco. 🤔",
-  "original_article_excerpt": "I'm sure you are not. After the \"San Francisco\" Earthquake a couple of years ago, there was a flurry of traffic on talk.religion.misc about how this was the result of the notorious homo- this that and t'other in the City. The fact that the Earthquake was actually down the road in Santa Cruz/Watsonville didn't seem to phase them any.",
+  "post_text": "Still wild how much precision space missions need...",
+  "original_article_excerpt": "...",
   "has_image": false,
   "has_external_url": false,
   "expected_themes": [
-    "natural disasters and morality",
-    "misattribution of events",
-    "discussion about societal reactions to disasters"
+    "space missions require high precision",
+    "small navigation errors can grow over long distances",
+    "the post is about space engineering or orbital navigation"
   ],
   "expected_retrieval_behavior": {
     "needs_search": false,
-    "reason": "The post reflects on societal reactions to events and can be explained from the text alone."
+    "reason": "The post is understandable from general space-engineering context."
   },
   "modality_expectation": {
     "should_use_text": true,
@@ -875,9 +923,34 @@ The synthetic post generation prompt instructs the model to preserve the main to
 }
 ```
 
-### 20 Newsgroups Pipeline
+### Why synthetic data helps here
 
-Synthetic examples do not have real Bluesky URLs, so this track skips `fetch_post` and runs the core reasoning pipeline directly on `post_text`.
+Synthetic data is useful because it gives us controlled ground truth.
+
+Real Bluesky posts are realistic but hard to label. The 20 Newsgroups dataset already has topic labels, so we can transform those labeled examples into short social-media-style posts and keep the labels.
+
+This lets us test things that are hard to measure with real posts alone:
+
+* whether the explainer preserves the original topic
+* whether the explanation remains grounded in the post
+* whether the model can handle many domains
+* whether the output format stays stable
+* whether the model invents unsupported image/link context
+* whether retrieval is skipped when the post is self-contained
+
+### Important limitation
+
+This benchmark is synthetic. It should not replace the real Bluesky evaluation.
+
+The synthetic posts are generated by an LLM, so they may be cleaner, shorter, or more explicit than real social media posts. The benchmark is best used as a **generalization and stress test**, while the Bluesky harness remains the main realistic product evaluation.
+
+### Evaluation pipeline
+
+The evaluator is implemented in `eval_20news.py`.
+
+Because the synthetic examples do not have real Bluesky URLs, this track skips the Bluesky fetching step.
+
+The pipeline is:
 
 ```text
 Synthetic post_text
@@ -895,69 +968,190 @@ LLM-as-judge evaluation
 topic prediction against gold_topic
 ```
 
-### 20 Newsgroups Output JSON
+The function `explain_synthetic_post` runs the core agent pipeline directly on the synthetic `post_text`:
+
+```python
+analysis = analyze_text(post_text)
+
+retrieval_context = retrieve_context(
+    needs_search=analysis.get("needs_search", False),
+    queries=analysis.get("queries", []),
+    external_url=None,
+)
+
+explanation = explain_post(
+    post_text=post_text,
+    draft_explanation=analysis.get("draft_explanation", ""),
+    author="synthetic_20newsgroups",
+    created_at="",
+    quoted_text="",
+    external_url="",
+    external_title="",
+    image_context="",
+    retrieval_context=retrieval_context,
+)
+```
+
+This isolates the reasoning and explanation quality from Bluesky-specific post fetching.
+
+### Rule-based evaluation
+
+The rule-based evaluator checks deterministic properties of the output.
+
+It measures:
+
+| Metric                   | Meaning                                                   |
+| ------------------------ | --------------------------------------------------------- |
+| `theme_coverage_rule`    | Whether expected theme keywords appear in the explanation |
+| `format_compliance_rule` | Whether the output follows the expected bullet format     |
+| `bullet_count`           | Number of bullets in the explanation                      |
+| `no_forbidden_content`   | Whether forbidden claims were avoided                     |
+| `retrieval_rule_score`   | Whether retrieval behavior matched the expected behavior  |
+| `rule_score`             | Weighted aggregate of rule-based metrics                  |
+
+For this benchmark, images and external URLs are not expected, so the evaluator assigns full modality scores when the explanation does not invent them.
+
+### LLM-as-judge evaluation
+
+The LLM judge evaluates qualitative properties that are harder to measure with keyword rules.
+
+It receives:
+
+* valid 20 Newsgroups topic labels
+* gold topic
+* synthetic post
+* original article excerpt
+* expected themes
+* forbidden claims
+* retrieved context
+* generated explanation
+
+The judge returns JSON:
 
 ```json
 {
-  "id": "synthetic_20news_alt_atheism_001",
-  "gold_topic": "alt.atheism",
-  "post_text": "It's fascinating how some people attribute natural disasters to moral failings...",
-  "agent_result": {
-    "post": {
-      "text": "It's fascinating how some people attribute natural disasters to moral failings...",
-      "source": "synthetic_20newsgroups"
-    },
-    "analysis": {
-      "draft_explanation": "The post comments on how some people interpret natural disasters as moral punishment.",
-      "unknown_terms": [],
-      "confidence": "high",
-      "needs_search": false,
-      "queries": []
-    },
-    "retrieval_context": "",
-    "image_context": "",
-    "explanation": "- The post criticizes the idea that natural disasters should be interpreted as punishment for moral behavior.\n- It points out a mismatch between where the earthquake actually happened and where blame was directed.\n- The broader theme is how people sometimes use disasters to reinforce social or religious narratives."
-  },
-  "rule_based": {
-    "theme_coverage_rule": 0.6667,
-    "format_compliance_rule": 2,
-    "bullet_count": 3,
-    "no_forbidden_content": true,
-    "retrieval_rule_score": 2,
-    "rule_score": 0.8333
-  },
-  "llm_judge": {
-    "theme_coverage": 1.0,
-    "groundedness": 1.0,
-    "hallucination_score": 0,
-    "usefulness": 5,
-    "format_compliance": 2,
-    "retrieval_success": 2,
-    "predicted_topic": "alt.atheism",
-    "topic_confidence": 0.9,
-    "gold_topic": "alt.atheism",
-    "topic_correct": true,
-    "topic_accuracy": 1.0,
-    "llm_judge_score": 0.95
-  }
+  "theme_coverage": 0.0,
+  "groundedness": 0.0,
+  "hallucination_score": 0,
+  "usefulness": 1,
+  "format_compliance": 0,
+  "retrieval_success": 0,
+  "predicted_topic": "",
+  "topic_confidence": 0.0,
+  "comments": ""
 }
 ```
 
-### 20 Newsgroups Metrics
+The most important added metric is `predicted_topic`.
 
-This evaluation adds topic-level scoring on top of explanation quality.
+The judge must choose exactly one topic from the official list:
 
-| Metric             | Meaning                                                        |
-| ------------------ | -------------------------------------------------------------- |
-| `predicted_topic`  | Topic predicted by the LLM judge from the post and explanation |
-| `gold_topic`       | Original 20 Newsgroups label                                   |
-| `topic_correct`    | Whether predicted topic matches the gold topic                 |
-| `topic_accuracy`   | Binary accuracy for each example                               |
-| `topic_confidence` | Judge confidence in the predicted topic                        |
+```text
+alt.atheism
+comp.graphics
+comp.os.ms-windows.misc
+comp.sys.ibm.pc.hardware
+comp.sys.mac.hardware
+comp.windows.x
+misc.forsale
+rec.autos
+rec.motorcycles
+rec.sport.baseball
+rec.sport.hockey
+sci.crypt
+sci.electronics
+sci.med
+sci.space
+soc.religion.christian
+talk.politics.guns
+talk.politics.mideast
+talk.politics.misc
+talk.religion.misc
+```
 
-The evaluator uses the official list of 20 Newsgroups topic labels and requires the judge to select exactly one. It then compares `predicted_topic` with `gold_topic` to compute topic accuracy.
+The evaluator compares the predicted topic against the original `gold_topic`.
 
-### 20 Newsgroups Results
+```python
+topic_correct = predicted_topic == gold_topic
+topic_accuracy = 1.0 if topic_correct else 0.0
+```
+
+### Final scoring
+
+The final LLM judge score combines explanation quality and topic recovery:
+
+```text
+llm_judge_score =
+  0.30 * theme_coverage
++ 0.25 * groundedness
++ 0.20 * usefulness_normalized
++ 0.10 * retrieval_success_normalized
++ 0.10 * format_compliance_normalized
++ 0.05 * topic_correct
+- 0.20 * hallucination_penalty
+```
+
+This rewards explanations that are complete, grounded, useful, correctly formatted, and aligned with the original topic.
+
+### Example
+
+#### Source topic
+
+```text
+sci.space
+```
+
+#### Original article idea
+
+```text
+The article discusses NASA missions, orbital mechanics, and the difficulty of navigating probes over long distances.
+```
+
+#### Synthetic Bluesky post
+
+```text
+Still wild how much precision space missions need. A tiny navigation mistake on Earth can become a massive miss when you're aiming a spacecraft across millions of miles. 🚀
+```
+
+#### Expected themes
+
+```json
+[
+  "space missions require high precision",
+  "small navigation errors can grow over long distances",
+  "the post is about space engineering or orbital navigation"
+]
+```
+
+#### Agent explanation
+
+```text
+- The post is about the precision required in space missions, where small navigation errors can grow over huge distances.
+- It uses a simple comparison to explain why orbital navigation and spacecraft targeting are difficult.
+- The rocket emoji reinforces that the topic is space exploration and engineering.
+```
+
+#### Judge result
+
+```json
+{
+  "theme_coverage": 1.0,
+  "groundedness": 1.0,
+  "hallucination_score": 0,
+  "usefulness": 5,
+  "format_compliance": 2,
+  "retrieval_success": 2,
+  "predicted_topic": "sci.space",
+  "topic_confidence": 0.95,
+  "topic_correct": true,
+  "topic_accuracy": 1.0,
+  "llm_judge_score": 0.95
+}
+```
+
+### Reported results
+
+A sample run with 20 examples produced:
 
 ```text
 Examples evaluated: 20
@@ -983,42 +1177,14 @@ LLM-as-judge means:
 Topic accuracy: 0.95
 ```
 
-The 20 Newsgroups evaluation shows strong generalization across broader content domains. The model achieved `0.95` topic accuracy, meaning the judge recovered the correct source topic from the synthetic post and generated explanation in most cases.
+### Interpretation
 
-Groundedness reached `0.975`, and hallucination score stayed low at `0.05`, which suggests that explanations were well supported by the synthetic post and rarely introduced unsupported claims. Usefulness reached `4.8 / 5`, indicating that the generated explanations were informative across diverse topics.
+The synthetic 20 Newsgroups benchmark shows that the explanation pipeline generalizes beyond a small set of handcrafted Bluesky examples.
 
-## Final Combined Metrics
+The high `topic_accuracy` indicates that the generated explanation preserved enough topic signal for the judge to recover the original source label. High `groundedness` and low `hallucination_score` suggest that explanations stayed close to the synthetic post and did not introduce many unsupported claims.
 
-| Metric                 | Bluesky Eval Harness | 20 Newsgroups Eval |
-| ---------------------- | -------------------: | -----------------: |
-| Examples evaluated     |                   12 |                 20 |
-| Errors                 |                    0 |                  0 |
-| Theme coverage rule    |               0.4333 |             0.7667 |
-| Format compliance rule |               2.0000 |             2.0000 |
-| Bullet count           |               3.0000 |             3.0000 |
-| Image rule score       |               1.5000 |                N/A |
-| External rule score    |               2.0000 |                N/A |
-| Retrieval rule score   |               1.5833 |             1.1000 |
-| Rule score             |               0.7842 |             0.8508 |
-| LLM theme coverage     |               0.8417 |             0.9700 |
-| Groundedness           |               0.9083 |             0.9750 |
-| Hallucination score    |               0.0833 |             0.0500 |
-| Usefulness             |               4.4167 |             4.8000 |
-| LLM format compliance  |               1.5000 |             1.9500 |
-| Retrieval success      |               1.4167 |             0.9500 |
-| Image usage            |               1.3333 |                N/A |
-| External URL usage     |               0.5000 |                N/A |
-| Quote/thread usage     |               0.0000 |                N/A |
-| Topic confidence       |                  N/A |             0.9125 |
-| Topic accuracy         |                  N/A |             0.9500 |
-| LLM judge score        |               0.7822 |             0.9143 |
+The lower `retrieval_success` score is expected because many synthetic posts are self-contained and do not require web retrieval. In this benchmark, the main goal is not retrieval performance; it is topic preservation, explanation quality, and generalization.
 
-## Overall Interpretation
 
-The two evaluation tracks measure different strengths.
+Together, the two evaluations provide complementary evidence: the Bluesky harness tests product realism, while the 20 Newsgroups benchmark tests controlled generalization.
 
-The **Bluesky Eval Harness** is closer to the real product setting. It tests realistic posts, retrieval decisions, image usage, external URL usage, and social-media-specific explanation quality. The results show strong groundedness and usefulness, while also identifying opportunities to improve image, quote/thread, and external URL usage.
-
-The **20 Newsgroups Evaluation** measures broader generalization. It abstracts away platform-specific fetching and focuses on whether the explanation pipeline can handle short posts derived from diverse topics. The strong topic accuracy, groundedness, and LLM judge score suggest that the core explanation pipeline generalizes well beyond the curated Bluesky set.
-
-Together, the evaluations show that the system can explain real social-media posts and generalize to wider topic distributions while keeping a stable format, low hallucination rate, and useful explanations.
