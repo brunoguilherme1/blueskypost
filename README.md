@@ -29,9 +29,8 @@ Use the live app by pasting a Bluesky post URL and running the explanation pipel
 4. [Main Components](#main-components)
 5. [Setup](#setup)
 6. [Run the App Locally](#run-the-app-locally)
-7. [Docker](#docker)
-8. [Example Output](#example-output)
-9. [Evaluation](#evaluation)
+7. [Example Output](#example-output)
+8. [Evaluation](#evaluation)
 
 ## Goal
 
