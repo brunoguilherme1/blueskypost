@@ -598,7 +598,8 @@ explainer
    ↓
 evaluation
 ```
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/87e302a6-9c33-417e-8829-d7c4bcbdb68b" />
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/4aad677d-d1c7-4ef8-95a0-a116212177c3" />
+
 
 
 ### Example Input JSON
