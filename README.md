@@ -422,6 +422,9 @@ Open:
 http://localhost:8080
 ```
 
+<img width="670" height="414" alt="image" src="https://github.com/user-attachments/assets/7a9f3abe-1d24-42e1-bfdd-411b96c42a4e" />
+
+
 ## Evaluation
 
 The evaluation checks whether the agent produces explanations that are useful, grounded, concise, and faithful to the original post.
