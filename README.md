@@ -75,7 +75,7 @@ Generate final explanation
 Return concise bullets
 ```
 
-<img width="1672" height="941" alt="Bluesky Post Explainer architecture" src="https://github.com/user-attachments/assets/53e0af25-51f6-4245-8d17-8d58b97e0b8e" />
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/4b72bfb1-379b-4cad-840a-62c8864c9182" />
 
 ## Repository Structure
 
