@@ -8,6 +8,9 @@ python-dotenv==1.0.1
 streamlit==1.41.1
 scikit-learn==1.6.1
 
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
 dnspython==2.8.0
 libipld==3.3.2
 primp==1.2.3
