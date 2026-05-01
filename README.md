@@ -15,9 +15,8 @@ Stack:
 
 The deployed app is available here:
 
-```text
-https://bluesky-explainer-666450702512.us-central1.run.app/
-```
+[https://bluesky-explainer-666450702512.us-central1.run.app/](https://bluesky-explainer-666450702512.us-central1.run.app/)
+
 
 Paste a Bluesky post URL in the app to run the full explanation flow from the browser.
 
