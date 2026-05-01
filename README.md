@@ -17,21 +17,6 @@ Live app:
 https://bluesky-explainer-666450702512.us-central1.run.app/
 ```
 
-## Why this project exists
-
-Social posts often rely on context that is not obvious from the text alone. A post can reference a meme, a current event, a public figure, an image, an external article, or a quoted post.
-
-The goal of this project is to make that context easier to understand.
-
-Given a Bluesky post URL, the app answers:
-
-- What is this post saying?
-- What context is missing?
-- Is there an image, link, quoted post, or external reference that matters?
-- Why would someone care about this post?
-
-The final answer is intentionally short: usually three bullet points.
-
 ## Architecture
 
 ```text
