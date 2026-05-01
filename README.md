@@ -323,7 +323,7 @@ final explanation
 
 Text planning and image analysis can run in parallel when both are needed.
 
-<img width="1536" height="1024" alt="Agent and tools workflow" src="https://github.com/user-attachments/assets/5ce2bc20-7c60-4d7a-a0d8-8cfbe095abfe" />
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/f49535c9-dcc1-48b6-a6ae-363757305676" />
 
 ## Setup
 
@@ -672,6 +672,8 @@ explainer
    ↓
 evaluation
 ```
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/87e302a6-9c33-417e-8829-d7c4bcbdb68b" />
+
 
 ### Example Input JSON
 
