@@ -33,13 +33,6 @@ Use the live app by pasting a Bluesky post URL and running the explanation pipel
 8. [Example Output](#example-output)
 9. [Evaluation](#evaluation)
 
-   * [Evaluation Input Format](#evaluation-input-format)
-   * [Evaluation Output Format](#evaluation-output-format)
-   * [Evaluation Metrics](#evaluation-metrics)
-   * [Eval Harness: Bluesky Posts](#eval-harness-bluesky-posts)
-   * [20 Newsgroups Evaluation](#20-newsgroups-evaluation)
-   * [Final Combined Metrics](#final-combined-metrics)
-
 ## Goal
 
 Social media posts are often hard to understand without extra context. A short post may reference a meme, current event, public figure, image, external article, quoted post, or previous conversation.
