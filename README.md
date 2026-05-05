@@ -331,7 +331,16 @@ pip install -r requirements.txt
 
 ### 3. Install frontend dependencies
 
+
 ```bash
+brew install node #mac
+
+https://nodejs.org/ #windows
+
+sudo apt update
+sudo apt install -y nodejs npm #unix
+
+
 cd frontend
 npm install
 cd ..
